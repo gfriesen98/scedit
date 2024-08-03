@@ -8,6 +8,8 @@ i dont know how to write c so wip
 
 `$ scedit -i path/to/input/file -o path/to/save/file`
 
+**note** this doesnt actually work like this yet
+
 see `screenshot.sh` for scripting usage examples
 
 ## build
