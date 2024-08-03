@@ -12,8 +12,12 @@
  *
  *--------------------------------------------------------------------------------------------
  * TODO: things to figure out
- *   - arguments
- *   - copy the exported image to xclip
+ *   ✅ arguments
+ *   ✅ copy the exported image to xclip
+ *   - add bindings for copying to clipboard and saving
+ *      - add feedback for these events
+ *   - add ability to accept a piped in image
+ *   - sanitize input options
  *   - general cleanup
  *   - do more 'c' things
  *   - make a better export filepath

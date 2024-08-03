@@ -13,4 +13,4 @@ path="$HOME/images/screenshots/$(date +%Y)/$(date +%B)"
 filename=$(date +"%Y-%m-%d-%H:%M").png
 
 maim -u -s $temppath || exit 1
-./build/sceditor
+./build/scedit
