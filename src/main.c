@@ -53,9 +53,9 @@ void print_help(const char *prog) {
     printf("\nGUI Usage:\n");
     printf("    L Click     : Draw\n");
     printf("    R Click     : Erase area\n");
-    printf("    BACKSPACE   : Clear all\n");
-    printf("    CTRL+C      : Copy to clipboard\n");
-    printf("    CTRL+S      : Save to designated location\n");
+    printf("    Backspace   : Clear all\n");
+    printf("    Ctrl+C      : Copy to clipboard\n");
+    printf("    Ctrl+S      : Save to output path and copy\n");
 }
 
 /**
