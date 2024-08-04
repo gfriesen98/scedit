@@ -274,8 +274,8 @@ int main(int argc, char *argv[]) {
     }
 
     // Raylib initialization
-    const int screenWidth = 1024;
-    const int screenHeight = 768;
+    const int screenWidth = 800;
+    const int screenHeight = 450;
     float brushSize = 10.0f;
 
     // setting flags that are features disabled otherwise
@@ -318,7 +318,7 @@ int main(int argc, char *argv[]) {
         // Left mouse button event - mouse pointer painting
         if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
             BeginTextureMode(paintingTarget);
-                DrawCircle((int)virtualMouse.x, (int)virtualMouse.y, brushSize, RED);
+                DrawCircle((int)virtualMouse.x, (int)virtualMouse.y, brushSize / scale, RED);
             EndTextureMode();
         }
 
