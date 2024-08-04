@@ -1,16 +1,16 @@
 #!/bin/bash
 
 # Example usage of 'scedit'
-# Uses 'maim' to take a screenshot with mouse
-# selection then opens it in 'scedit'
 #
-# TODO: 
-# - eventually flesh this out when scedit has better scripting support
-# 	scedit uses /tmp/screen.png hardcoded
+# Uses 'maim' to take a mouse selection screenshot and
+# opens it with 'scedit'
+#
+# Save the screenshot in a date organized file structure
+# On 'scedit' exit, copy to clipboard and save to designated location
 
-temppath="/tmp/screen.png"
-path="$HOME/images/screenshots/$(date +%Y)/$(date +%B)"
+path=$HOME/images/screenshots/$(date +%Y)/$(date +%B)
 filename=$(date +"%Y-%m-%d-%H:%M").png
 
-maim -u -s $temppath || exit 1
-./build/scedit
+[[ ! -d $path ]] && mkdir -p $path
+
+maim -u -s | ./build/scedit -o $path/$filename -s
