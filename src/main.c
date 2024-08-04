@@ -56,11 +56,12 @@ void print_help(const char *prog) {
     printf("    -c      : Enable copy on exit\n");
     printf("    -h      : Prints this help message\n");
     printf("\nGUI Usage:\n");
-    printf("    L Click     : Draw\n");
-    printf("    R Click     : Erase area\n");
-    printf("    Backspace   : Clear all\n");
-    printf("    Ctrl+C      : Copy to clipboard\n");
-    printf("    Ctrl+S      : Save to output path and copy\n");
+    printf("    L Click         : Draw\n");
+    printf("    R Click         : Erase area\n");
+    printf("    Scroll up/down  : Change brush size\n");
+    printf("    Backspace       : Clear all\n");
+    printf("    Ctrl+C          : Copy to clipboard\n");
+    printf("    Ctrl+S          : Save to output path and copy\n");
 }
 
 /**

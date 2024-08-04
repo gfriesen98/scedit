@@ -18,11 +18,12 @@ Options:
     -h      : Prints this menu
 
 GUI Usage:
-    L Click     : Draw
-    R Click     : Erase
-    Backspace   : Clear all
-    Ctrl+C      : Copy to clipboard
-    Ctrl+S      : Save to output path and copy
+    L Click         : Draw
+    R Click         : Erase
+    Scroll up/down  : Change brush size
+    Backspace       : Clear all
+    Ctrl+C          : Copy to clipboard
+    Ctrl+S          : Save to output path and copy
 ```
 
 ### examples
