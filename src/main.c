@@ -40,6 +40,11 @@
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 #define DEFAULT_BUFFER_SIZE 1024
 
+/**
+ * print_help(char prog)
+ *
+ * Displays the help message
+ */
 void print_help(const char *prog) {
     printf("Usage: %s -i <input_file_path> [-o <output_file_path>] [-sch]\n", prog);
     printf("\nOptions:\n");
@@ -92,6 +97,11 @@ int validate_file_path(const char *filePath) {
     return 1;
 }
 
+/**
+ * copy_to_clipboard(RenderTexture2D background, RenderTexture2D dickDrawings)
+ *
+ * Copies the modified image to the clipboard with xclip
+ */
 void copy_to_clipboard(const RenderTexture2D background, const RenderTexture2D dickDrawings) {
     Image baseImg = LoadImageFromTexture(background.texture);
     Image probablyDickDrawings = LoadImageFromTexture(dickDrawings.texture);
@@ -111,6 +121,11 @@ void copy_to_clipboard(const RenderTexture2D background, const RenderTexture2D d
     UnloadImage(probablyDickDrawings);
 }
 
+/**
+ * save_image(RenderTexture2D background, const RenderTexture2D dickDrawings, char *savePath)
+ *
+ * Saves the modified image to the designated path and copy to clipboard
+ */
 void save_image(const RenderTexture2D background, const RenderTexture2D dickDrawings, const char *savePath) {
     Image baseImg = LoadImageFromTexture(background.texture);
     Image probablyDickDrawings = LoadImageFromTexture(dickDrawings.texture);
@@ -137,7 +152,7 @@ void save_image(const RenderTexture2D background, const RenderTexture2D dickDraw
 /**
  * load_image_from_pipe()
  *
- * reads in image file data from unix pipe into raylib image
+ * Reads stdin buffer into raylib image
  */
 Image load_image_from_pipe() {
     printf("load_image_from_pipe START\n");
@@ -188,8 +203,7 @@ Image load_image_from_pipe() {
 
 int main(int argc, char *argv[]) {
 
-    // opts variables
-    int helpFlag = 0;
+    // Opts variables
     int inputFilepathFlag = 0;
     int outputFilepathFlag = 0;
     int pipedFileFlag = 0;
@@ -199,27 +213,27 @@ int main(int argc, char *argv[]) {
 
     char *inputFilepath = NULL;
     char *outputFilepath = NULL;
-    char *tempFilepath = "/tmp/scedit.png";
-    Image img = { 0 };
+    Image img = { 0 }; // init screenshot here so we can determine how its being loaded
 
+    // Command line options
     while ((opt = getopt(argc, argv, "i:o:csh")) != -1) {
         switch (opt) {
-            case 'i':
+            case 'i':   // Input file path
                 inputFilepathFlag = 1;
                 pipedFileFlag = 0;
                 inputFilepath = optarg;
                 break;
-            case 'o':
+            case 'o':   // Output file path
                 outputFilepathFlag = 1;
                 outputFilepath = optarg;
                 break;
-            case 'c':
+            case 'c':   // Enable clipboard save on exit
                 clipboardOnExitFlag = 1;
                 break;
-            case 's':
+            case 's':   // Enable save on exit
                 saveOnExitFlag = 1;
                 break;
-            case 'h':
+            case 'h':   // Show help message
             default:
                 print_help(argv[0]);
                 return 0;
@@ -237,7 +251,7 @@ int main(int argc, char *argv[]) {
     printf("outputFilepath: %s\n", outputFilepath);
     printf("clipboardOnExit: %d", clipboardOnExitFlag);
 
-    // check if file was not provided thru args
+    // Check if file was not provided thru args
     if (inputFilepathFlag) {
         if (!validate_file_path(inputFilepath)) exit(EXIT_FAILURE);
         printf("LoadImage from path\n");
@@ -245,7 +259,7 @@ int main(int argc, char *argv[]) {
     }
 
     if (!inputFilepathFlag && pipedFileFlag){
-        // try to read from stdin
+        // Try to read from stdin
         printf("load_image_from_pipe CALL\n");
         img = load_image_from_pipe();
         if (img.data == NULL) {
@@ -259,44 +273,40 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    // Initialization
+    // Raylib initialization
     const int screenWidth = 800;
     const int screenHeight = 450;
-
     float brushSize = 10.0f;
-    bool mouseWasPressed = false;
 
     // setting flags that are features disabled otherwise
     SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT);
     InitWindow(screenWidth, screenHeight, "scedit");
 
-    // loading images. JPG is disabled and i need to recompile raylib to include
-    // support.
-    //Image img = LoadImage("/tmp/screen.png"); // loads image in cpu(ram)
-    Texture2D tex = LoadTextureFromImage(img); // Image converted to texture, uploaded to GPU memory (vram)
-    UnloadImage(img); // Once image is uploaded to vram it can be unloaded from ram
+    Texture2D tex = LoadTextureFromImage(img); // image converted to texture, uploaded to GPU memory (vram)
+    UnloadImage(img); // once image is uploaded to vram it can be unloaded from ram
 
-    // for letterbox scaling
+    // Variables for letterbox scaling
     int progScreenWidth = tex.width;
     int progScreenHeight = tex.height;
+    // Set up RenderTextures for drawing and scaling
     RenderTexture2D target = LoadRenderTexture(progScreenWidth, progScreenHeight);
     RenderTexture2D paintingTarget = LoadRenderTexture(progScreenWidth, progScreenHeight);
     SetTextureFilter(target.texture, TEXTURE_FILTER_BILINEAR);
+    SetTextureFilter(paintingTarget.texture, TEXTURE_FILTER_BILINEAR);
 
+    // Window settings
     SetWindowMinSize(250, 250);
     SetWindowPosition(0, 0);
     SetWindowMonitor(0); // idk if this means its primary monitor or not...
-    // SetTargetFPS(165);   // Set our game to run at 60 frames-per-second
+    // SetTargetFPS(165);
 
-    // clear buffer before drawing
+    // Clear buffer before drawing
     BeginTextureMode(target);
     ClearBackground(RAYWHITE);
     EndTextureMode();
 
     // Main loop
     while (!WindowShouldClose()) {
-        // update variables
-
         // Scaling
         float scale = MIN((float)GetScreenWidth() / progScreenWidth, (float)GetScreenHeight() / progScreenHeight);
         Vector2 mouse = GetMousePosition();
@@ -333,14 +343,14 @@ int main(int argc, char *argv[]) {
             save_image(target, paintingTarget, outputFilepath);
         }
 
-        // backspace - clear all drawing
+        // Backspace event - clear all drawing
         if (IsKeyPressed(KEY_BACKSPACE)) {
             BeginTextureMode(paintingTarget);
                 DrawTexture(tex, 0, 0, WHITE);
             EndTextureMode();
         }
 
-        // brush size
+        // Brush size
         brushSize += GetMouseWheelMove()*5;
         if (brushSize < 2) brushSize = 2;
         if (brushSize > 50) brushSize = 50;
