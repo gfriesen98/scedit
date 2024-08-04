@@ -37,6 +37,12 @@ Loading an image from a pipe with a designated output file path
 
 see `screenshot.sh` for scripting usage examples
 
+**note** ideal usage means this is a floating window. for window manager users you may want to set a rule to set scedit to be a floating window
+
+i3wm example:
+
+`for_window [class="scedit"] floating enable`
+
 ## build
 
 ### dependencies
