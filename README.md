@@ -39,16 +39,19 @@ see `screenshot.sh` for scripting usage examples
 
 ## build
 
-depends on
+### dependencies
 
+- gcc
 - raylib
-- xclip
+- xclip (for clipboard access)
 - notify-send (for feedback on saving etc)
 
-1. ensure dependencies are installed
-2. clone this repository
-3. `cd scedit`
-4. `make`
-    - to clean build files, run `make clear`
+### building
 
-build file `scedit` will be generated in `./build`
+1. ensure dependencies are installed via your package manager
+    - you'll have to figure out what the package names are for your package manager
+2. clone this repo: `git clone https://github.com/gfriesen98/scedit.git`
+3. naviage to repo: `cd scedit`
+4. build by running: `make`
+    - to clean build files, run `make clear`
+5. copy build to /usr/local/bin: `cp ./build/scedit /usr/local/bin`
