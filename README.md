@@ -7,7 +7,7 @@ i dont know how to write c so wip
 ## usage
 
 ```bash
-Usage: Usage: scedit -i <input_file_path> [-o <output_file_path>] [-sch]
+Usage: scedit -i <input_file_path> [-o <output_file_path>] [-sch]
 Options:
     -i      : Input file path
             You can also pipe an image into scedit
