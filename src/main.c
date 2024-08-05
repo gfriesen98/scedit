@@ -29,7 +29,7 @@
 
 #include "raylib.h"
 #include "raymath.h"
-#include <bits/getopt_core.h>
+#include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -48,13 +48,17 @@
 void print_help(const char *prog) {
     printf("Usage: %s -i <input_file_path> [-o <output_file_path>] [-sch]\n", prog);
     printf("\nOptions:\n");
-    printf("    -i      : Input file path\n");
-    printf("            You can also pipe image into scedit\n");
-    printf("            Example: 'cat img.png | scedit'\n");
-    printf("    -o      : Output file path (required)\n");
-    printf("    -s      : Enable save+copy on exit\n");
-    printf("    -c      : Enable copy on exit\n");
-    printf("    -h      : Prints this help message\n");
+    printf("    [stdin] -i --input       : Input file path\n");
+    printf("                        You can also pipe image into scedit\n");
+    printf("                        Example: 'cat img.png | scedit'\n");
+    printf("    -o --output              : Output file path (required)\n");
+    printf("    -b --brushsize           : Brush size (default '5')\n");
+    printf("    -c --colour              : Brush colour or hex colour code\n");
+    printf("    -l --listcolours         : List all builtin colours\n");
+    printf("    -m --monitor             : Display to open on (default 0)\n");
+    printf("    -s --saveonexit          : Enable save+copy on exit (Default disabled)\n");
+    printf("    -x --clipboardonexit     : Enable copy on exit (Default disabled)\n");
+    printf("    -h --help                : Prints this help message\n");
     printf("\nGUI Usage:\n");
     printf("    L Click         : Draw\n");
     printf("    R Click         : Erase area\n");
@@ -202,22 +206,87 @@ Image load_image_from_pipe() {
     return image;
 }
 
-int main(int argc, char *argv[]) {
+void str_hex_to_rgb_colour(const char *choice, unsigned char *r, unsigned char *g, unsigned char *b) {
+    unsigned long hex_value = strtoul(choice, NULL, 16);
+    *r = (hex_value >> 16) & 0xFF;
+    *g = (hex_value >> 8) & 0xFF;
+    *b = hex_value & 0xFF;
+}
 
-    // Opts variables
+Color select_colour(const char *choice) {
+    if (strcmp(choice, "white") == 0) return RAYWHITE;
+    else if (strcmp(choice, "yellow") == 0) return YELLOW;
+    else if (strcmp(choice, "gold") == 0) return GOLD;
+    else if (strcmp(choice, "orange") == 0) return ORANGE;
+    else if (strcmp(choice, "red") == 0) return RED;
+    else if (strcmp(choice, "maroon") == 0) return MAROON;
+    else if (strcmp(choice, "green") == 0) return GREEN;
+    else if (strcmp(choice, "lime") == 0) return LIME;
+    else if (strcmp(choice, "darkgreen") == 0) return DARKGREEN;
+    else if (strcmp(choice, "skyblue") == 0) return SKYBLUE;
+    else if (strcmp(choice, "blue") == 0) return BLUE;
+    else if (strcmp(choice, "darkblue") == 0) return DARKBLUE;
+    else if (strcmp(choice, "purple") == 0) return PURPLE;
+    else if (strcmp(choice, "violet") == 0) return VIOLET;
+    else if (strcmp(choice, "darkpurple") == 0) return DARKPURPLE;
+    else if (strcmp(choice, "beige") == 0) return BEIGE;
+    else if (strcmp(choice, "brown") == 0) return BROWN;
+    else if (strcmp(choice, "darkbrown") == 0) return DARKBROWN;
+    else if (strcmp(choice, "lightgray") == 0 || strcmp(choice, "lightgrey") == 0) return LIGHTGRAY;
+    else if (strcmp(choice, "gray") == 0 || strcmp(choice, "grey") == 0) return GRAY;
+    else if (strcmp(choice, "darkgray") == 0 || strcmp(choice, "darkgrey") == 0) return DARKGRAY;
+    else if (strcmp(choice, "black") == 0) return BLACK;
+    else {
+        unsigned char r,g,b;
+        str_hex_to_rgb_colour(choice, &r, &g, &b);
+        return (Color){r,g,b, 255};
+    }
+}
+
+int main(int argc, char *argv[]) {
+    // default screen size - for init
+    const int screenWidth = 800;
+    const int screenHeight = 450;
+    Color colours[23] = {
+        RAYWHITE, YELLOW, GOLD, ORANGE, RED, MAROON, GREEN, LIME,
+        DARKGREEN, SKYBLUE, BLUE, DARKBLUE, PURPLE, VIOLET, DARKPURPLE,
+        BEIGE, BROWN, DARKBROWN, LIGHTGRAY, GRAY, DARKGRAY, BLACK
+    };
+
+
+    // Opts flags
+    int opt;
     int inputFilepathFlag = 0;
     int outputFilepathFlag = 0;
     int pipedFileFlag = 0;
     int clipboardOnExitFlag = 0;
     int saveOnExitFlag = 0;
-    int opt;
+    int colourFlag = 0;
 
+    // Opts variables
     char *inputFilepath = NULL;
     char *outputFilepath = NULL;
+    int monitor = 0;
+    float brushSize = 5.0f;
+    Color colourSelected = RED; // Default RED
+
     Image img = { 0 }; // init screenshot here so we can determine how its being loaded
+    
+    static struct option long_options[] = {
+        {"input", required_argument, 0, 'i'},
+        {"output", required_argument, 0, 'o'},
+        {"monitor", required_argument, 0, 'm'},
+        {"brushsize", required_argument, 0, 'b'},
+        {"colour", required_argument, 0, 'c'},
+        {"listcolours", no_argument, 0, 'l'},
+        {"clipboardonexit", no_argument, 0, 'x'},
+        {"saveonexit", no_argument, 0, 's'},
+        {"help", no_argument, 0, 'h'},
+        {0,0,0,0}
+    };
 
     // Command line options
-    while ((opt = getopt(argc, argv, "i:o:csh")) != -1) {
+    while ((opt = getopt_long(argc, argv, "i:o:m:b:c:lxsh", long_options, NULL)) != -1) {
         switch (opt) {
             case 'i':   // Input file path
                 inputFilepathFlag = 1;
@@ -228,7 +297,21 @@ int main(int argc, char *argv[]) {
                 outputFilepathFlag = 1;
                 outputFilepath = optarg;
                 break;
-            case 'c':   // Enable clipboard save on exit
+            case 'm':
+                monitor = atoi(optarg);
+                break;
+            case 'b':
+                brushSize = atof(optarg);
+                break;
+            case 'c':
+                colourSelected = select_colour(optarg);
+                break;
+            case 'l':
+                printf("Available colours:\n");
+                printf("white, yellow, gold, orange,\nred, maroon, green, lime\ndarkgreen, skyblue, blue, darkblue,\npurple, violet, darkpurple, beige,\nbrown, darkbrown, lightgre/ay, gre/ay,\ndarkgre/ay, black\n");
+                exit(EXIT_SUCCESS);
+                break;
+            case 'x':   // Enable clipboard save on exit
                 clipboardOnExitFlag = 1;
                 break;
             case 's':   // Enable save on exit
@@ -250,7 +333,10 @@ int main(int argc, char *argv[]) {
 
     printf("inputFilepath: %s\n", inputFilepath);
     printf("outputFilepath: %s\n", outputFilepath);
-    printf("clipboardOnExit: %d", clipboardOnExitFlag);
+    printf("clipboardOnExit: %d\n", clipboardOnExitFlag);
+    printf("brushSize: %f\n", brushSize);
+    printf("monitor: %d\n", monitor);
+    //exit(EXIT_SUCCESS);
 
     // Check if file was not provided thru args
     if (inputFilepathFlag) {
@@ -275,10 +361,10 @@ int main(int argc, char *argv[]) {
     }
 
     // Raylib initialization
-    const int screenWidth = 800;
-    const int screenHeight = 450;
-    float brushSize = 10.0f;
-
+    int imgWidth = img.width;
+    int imgHeight = img.height;
+    printf("img width: %d\nimg height: %d\n", img.width, img.height);
+    
     // setting flags that are features disabled otherwise
     SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT);
     InitWindow(screenWidth, screenHeight, "scedit");
@@ -298,12 +384,20 @@ int main(int argc, char *argv[]) {
     // Window settings
     SetWindowMinSize(250, 250);
     SetWindowPosition(0, 0);
-    SetWindowMonitor(0); // idk if this means its primary monitor or not...
+    SetWindowMonitor(monitor); // idk if this means its primary monitor or not...
+
     // SetTargetFPS(165);
+    
+    const int monitorWidth = GetMonitorWidth(monitor);
+    const int monitorHeight = GetMonitorHeight(monitor);
+    printf("monitor width: %d\nmonitor height: %d\n", monitorWidth, monitorHeight);
+    if (imgWidth >= monitorWidth) imgWidth = monitorWidth - 40;
+    if (imgHeight >= monitorHeight) imgHeight = monitorHeight - 40;
+    SetWindowSize(imgWidth, imgHeight);
 
     // Clear buffer before drawing
     BeginTextureMode(target);
-    ClearBackground(RAYWHITE);
+        ClearBackground(RAYWHITE);
     EndTextureMode();
 
     // Main loop
@@ -319,7 +413,7 @@ int main(int argc, char *argv[]) {
         // Left mouse button event - mouse pointer painting
         if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
             BeginTextureMode(paintingTarget);
-                DrawCircle((int)virtualMouse.x, (int)virtualMouse.y, brushSize / scale, RED);
+                DrawCircle((int)virtualMouse.x, (int)virtualMouse.y, brushSize / scale, colourSelected);
             EndTextureMode();
         }
 
@@ -391,7 +485,7 @@ int main(int argc, char *argv[]) {
         if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT)) {
             DrawCircleLines((int)mouse.x, (int)mouse.y, brushSize, GRAY);
         } else {
-            DrawCircle(GetMouseX(), GetMouseY(), brushSize, RED);
+            DrawCircle(GetMouseX(), GetMouseY(), brushSize, colourSelected);
         }
 
         EndDrawing();
