@@ -7,19 +7,26 @@ i dont know how to write c so wip
 ## usage
 
 ```bash
-Usage: scedit -i <input_file_path> [-o <output_file_path>] [-sch]
+Usage: ./scedit -i <input_file_path> -o <output_file_path> [-bclmsxh]
+
 Options:
-    -i      : Input file path
-            You can also pipe an image into scedit
-            Example: cat img.png | scedit -o output.png
-    -o      : Output file path
-    -s      : Enable save/clipboard on exit
-    -c      : Enable clipboard on exit
-    -h      : Prints this menu
+    [stdin] -i --input       : Input file path
+                        You can also pipe image into scedit
+                        Example: 'cat img.png | scedit -o myimg.png'
+    -o --output              : Output file path (required)
+    -b --brushsize           : Brush size (default '5')
+    -c --colour              : Brush colour or hex colour code. Default 'red'
+                        Example: 'scedit -c white'
+                                 'scedit -c fcba03'
+    -l --listcolours         : List all builtin colours
+    -m --monitor             : Display to open on (default 0)
+    -s --saveonexit          : Enable save+copy on exit (Default disabled)
+    -x --clipboardonexit     : Enable copy on exit (Default disabled)
+    -h --help                : Prints this help message
 
 GUI Usage:
     L Click         : Draw
-    R Click         : Erase
+    R Click         : Erase area
     Scroll up/down  : Change brush size
     Backspace       : Clear all
     Ctrl+C          : Copy to clipboard

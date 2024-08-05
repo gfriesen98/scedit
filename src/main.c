@@ -46,14 +46,16 @@
  * Displays the help message
  */
 void print_help(const char *prog) {
-    printf("Usage: %s -i <input_file_path> [-o <output_file_path>] [-sch]\n", prog);
+    printf("Usage: %s -i <input_file_path> -o <output_file_path> [-bclmsxh]\n", prog);
     printf("\nOptions:\n");
     printf("    [stdin] -i --input       : Input file path\n");
     printf("                        You can also pipe image into scedit\n");
-    printf("                        Example: 'cat img.png | scedit'\n");
+    printf("                        Example: 'cat img.png | scedit -o myimg.png'\n");
     printf("    -o --output              : Output file path (required)\n");
     printf("    -b --brushsize           : Brush size (default '5')\n");
-    printf("    -c --colour              : Brush colour or hex colour code\n");
+    printf("    -c --colour              : Brush colour or hex colour code. Default 'red'\n");
+    printf("                        Example: 'scedit -c white'\n");
+    printf("                                 'scedit -c fcba03'\n");
     printf("    -l --listcolours         : List all builtin colours\n");
     printf("    -m --monitor             : Display to open on (default 0)\n");
     printf("    -s --saveonexit          : Enable save+copy on exit (Default disabled)\n");
@@ -247,12 +249,6 @@ int main(int argc, char *argv[]) {
     // default screen size - for init
     const int screenWidth = 800;
     const int screenHeight = 450;
-    Color colours[23] = {
-        RAYWHITE, YELLOW, GOLD, ORANGE, RED, MAROON, GREEN, LIME,
-        DARKGREEN, SKYBLUE, BLUE, DARKBLUE, PURPLE, VIOLET, DARKPURPLE,
-        BEIGE, BROWN, DARKBROWN, LIGHTGRAY, GRAY, DARKGRAY, BLACK
-    };
-
 
     // Opts flags
     int opt;
@@ -261,7 +257,6 @@ int main(int argc, char *argv[]) {
     int pipedFileFlag = 0;
     int clipboardOnExitFlag = 0;
     int saveOnExitFlag = 0;
-    int colourFlag = 0;
 
     // Opts variables
     char *inputFilepath = NULL;
