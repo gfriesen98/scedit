@@ -143,12 +143,12 @@ void save_image(const RenderTexture2D background, const RenderTexture2D dickDraw
                     probablyDickDrawings.height},
         WHITE);
     ImageFlipVertical(&baseImg);
-    ExportImage(baseImg, "/tmp/scedit.png");
+    //ExportImage(baseImg, "/tmp/scedit.png");
     ExportImage(baseImg, savePath);
-    int result = system("cat /tmp/scedit.png | xclip -selection clipboard -t image/png");
-    printf("system() xclip call result: %d\n", result);
-    remove("/tmp/scedit.png");
-    char cmd[1024] = "notify-send \"Copied image to clipboard!\" \"Saved image to ";
+    //int result = system("cat /tmp/scedit.png | xclip -selection clipboard -t image/png");
+    //printf("system() xclip call result: %d\n", result);
+    //remove("/tmp/scedit.png");
+    char cmd[1024] = "notify-send \"Saved image to\" \"";
     strcat(cmd, savePath);
     strcat(cmd, "\" --app-name \"scedit\"");
     system(cmd);
@@ -488,7 +488,7 @@ int main(int argc, char *argv[]) {
 
     // De-Initialization
     if (saveOnExitFlag) save_image(target, paintingTarget, outputFilepath);
-    if (clipboardOnExitFlag && !saveOnExitFlag) copy_to_clipboard(target, paintingTarget);
+    if (clipboardOnExitFlag) copy_to_clipboard(target, paintingTarget);
     UnloadTexture(tex); // texture unloading
     UnloadRenderTexture(target);
     UnloadRenderTexture(paintingTarget);
