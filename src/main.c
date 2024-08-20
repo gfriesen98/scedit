@@ -10,25 +10,11 @@
  *   - raylib [textures] example - Mouse painting
  *   - raylib [core] example - window scale letterbox (and virtual mouse)
  *
- *--------------------------------------------------------------------------------------------
- * TODO: things to figure out
- *   ✅ arguments
- *   ✅ copy the exported image to xclip
- *   ✅ add bindings for copying to clipboard and saving
- *      🟨 add feedback for these events (notify-send)
- *   ✅ add ability to accept a piped in image
- *   ✅ sanitize input options
- *   ❌ general cleanup
- *      - if anything i feel it got more messy
- *   ✅ do more 'c' things
- *   ✅ make a better export filepath
- *   ✅ figure out if we can export the file to the clipboard
- *   ✅ save the file on exit or something instead
- *
 *********************************************************************************************/
 
 #include "raylib.h"
 #include "raymath.h"
+#include "util.h"
 #include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -38,11 +24,9 @@
 
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
-#define DEFAULT_BUFFER_SIZE 1024
 
 /**
  * print_help(char prog)
- *
  * Displays the help message
  */
 void print_help(const char *prog) {
@@ -71,150 +55,9 @@ void print_help(const char *prog) {
 }
 
 /**
- * resolve_directory_path(char *)
- *
- * Ensures a directory path exists
+ * select_colour()
+ * Returns a raylib colour from --colour choice
  */
-int validate_directory_path(const char *path) {
-    struct stat statbuf;
-    if (stat(path, &statbuf) != 0) {
-        fprintf(stderr, "Error: Path '%s' cannot be accessed\n", path);
-        return 0;
-    }
-
-    if (!S_ISDIR(statbuf.st_mode)) {
-        fprintf(stderr, "Error: '%s' is not a directory\n", path);
-        return 0;
-    }
-
-    return 1;
-}
-
-/**
- * validate_file_path(char *)
- *
- * Ensures a file path exist
- */
-int validate_file_path(const char *filePath) {
-    if (access(filePath, F_OK) == -1) {
-        fprintf(stderr, "Error: File '%s' does not exist or cannot be accessed\n", filePath);
-        return 0;
-    }
-
-    return 1;
-}
-
-/**
- * copy_to_clipboard(RenderTexture2D background, RenderTexture2D dickDrawings)
- *
- * Copies the modified image to the clipboard with xclip
- */
-void copy_to_clipboard(const RenderTexture2D background, const RenderTexture2D dickDrawings) {
-    Image baseImg = LoadImageFromTexture(background.texture);
-    Image probablyDickDrawings = LoadImageFromTexture(dickDrawings.texture);
-    ImageDraw(&baseImg, probablyDickDrawings,
-        (Rectangle){0, 0, (float)probablyDickDrawings.width,
-                    (float)probablyDickDrawings.height},
-        (Rectangle){0, 0, probablyDickDrawings.width,
-                    probablyDickDrawings.height},
-        WHITE);
-    ImageFlipVertical(&baseImg);
-    ExportImage(baseImg, "/tmp/scedit.png");
-    int result = system("cat /tmp/scedit.png | xclip -selection clipboard -t image/png");
-    printf("system() xclip call result: %d\n", result);
-    remove("/tmp/scedit.png");
-    system("notify-send \"Copied image to clipboard!\" --app-name \"scedit\"");
-    UnloadImage(baseImg);
-    UnloadImage(probablyDickDrawings);
-}
-
-/**
- * save_image(RenderTexture2D background, const RenderTexture2D dickDrawings, char *savePath)
- *
- * Saves the modified image to the designated path and copy to clipboard
- */
-void save_image(const RenderTexture2D background, const RenderTexture2D dickDrawings, const char *savePath) {
-    Image baseImg = LoadImageFromTexture(background.texture);
-    Image probablyDickDrawings = LoadImageFromTexture(dickDrawings.texture);
-        ImageDraw(&baseImg, probablyDickDrawings,
-        (Rectangle){0, 0, (float)probablyDickDrawings.width,
-                    (float)probablyDickDrawings.height},
-        (Rectangle){0, 0, probablyDickDrawings.width,
-                    probablyDickDrawings.height},
-        WHITE);
-    ImageFlipVertical(&baseImg);
-    //ExportImage(baseImg, "/tmp/scedit.png");
-    ExportImage(baseImg, savePath);
-    //int result = system("cat /tmp/scedit.png | xclip -selection clipboard -t image/png");
-    //printf("system() xclip call result: %d\n", result);
-    //remove("/tmp/scedit.png");
-    char cmd[1024] = "notify-send \"Saved image to\" \"";
-    strcat(cmd, savePath);
-    strcat(cmd, "\" --app-name \"scedit\"");
-    system(cmd);
-    UnloadImage(baseImg);
-    UnloadImage(probablyDickDrawings);
-}
-
-/**
- * load_image_from_pipe()
- *
- * Reads stdin buffer into raylib image
- */
-Image load_image_from_pipe() {
-    printf("load_image_from_pipe START\n");
-    unsigned char *buffer = NULL;
-    size_t buffer_size = DEFAULT_BUFFER_SIZE;
-    size_t bytesRead;
-    Image image = { 0 };
-    
-    buffer = (unsigned char *)malloc(buffer_size);
-    if (buffer == NULL) {
-        perror("Memory allocation failed...");
-        return image;
-    }
-
-    if (isatty(STDIN_FILENO)) {
-        printf("No image data was piped...\n");
-        return image;
-    }
-
-    bytesRead = fread(buffer, 1, buffer_size, stdin);
-    printf("First bytesRead: %d", (int)bytesRead);
-    if (bytesRead <= 0) {
-        printf("No image data was piped in\n");
-        free(buffer);
-        return image;
-    }
-
-    while (bytesRead == buffer_size) {
-        buffer_size *= 2;
-        buffer = (unsigned char *)realloc(buffer, buffer_size);
-        if (buffer == NULL) {
-            perror("Memory re-allocation failed...");
-            return image;
-        }
-        bytesRead += fread(buffer + bytesRead, 1, buffer_size - bytesRead, stdin);
-    }
-
-    if (buffer_size > 0) {
-        image = LoadImageFromMemory(".png", buffer, bytesRead);
-        if (image.data == NULL) {
-            printf("Failed to load image from memory.\n");
-        }
-    }
-
-    free(buffer);
-    return image;
-}
-
-void str_hex_to_rgb_colour(const char *choice, unsigned char *r, unsigned char *g, unsigned char *b) {
-    unsigned long hex_value = strtoul(choice, NULL, 16);
-    *r = (hex_value >> 16) & 0xFF;
-    *g = (hex_value >> 8) & 0xFF;
-    *b = hex_value & 0xFF;
-}
-
 Color select_colour(const char *choice) {
     if (strcmp(choice, "white") == 0) return RAYWHITE;
     else if (strcmp(choice, "yellow") == 0) return YELLOW;
@@ -265,7 +108,7 @@ int main(int argc, char *argv[]) {
     float brushSize = 5.0f;
     Color colourSelected = RED; // Default RED
 
-    Image img = { 0 }; // init screenshot here so we can determine how its being loaded
+    Image inputImage = { 0 }; // init screenshot here so we can determine how its being loaded
     
     static struct option long_options[] = {
         {"input", required_argument, 0, 'i'},
@@ -292,16 +135,16 @@ int main(int argc, char *argv[]) {
                 outputFilepathFlag = 1;
                 outputFilepath = optarg;
                 break;
-            case 'm':
+            case 'm':   // Monitor index
                 monitor = atoi(optarg);
                 break;
-            case 'b':
+            case 'b':   // Brush size
                 brushSize = atof(optarg);
                 break;
-            case 'c':
+            case 'c':   // Colour
                 colourSelected = select_colour(optarg);
                 break;
-            case 'l':
+            case 'l':   // List colours
                 printf("Available colours:\n");
                 printf("white, yellow, gold, orange,\nred, maroon, green, lime\ndarkgreen, skyblue, blue, darkblue,\npurple, violet, darkpurple, beige,\nbrown, darkbrown, lightgre/ay, gre/ay,\ndarkgre/ay, black\n");
                 exit(EXIT_SUCCESS);
@@ -319,85 +162,88 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    // Set piped file flag if -i isnt provided
     if (!inputFilepathFlag) pipedFileFlag = 1;
+
+    // Check if output file path is provided
     if (!outputFilepathFlag) { // -o is required rn
         printf("-o is required\n");
         print_help(argv[0]);
         exit(EXIT_FAILURE);
     }
 
-    printf("inputFilepath: %s\n", inputFilepath);
-    printf("outputFilepath: %s\n", outputFilepath);
-    printf("clipboardOnExit: %d\n", clipboardOnExitFlag);
-    printf("brushSize: %f\n", brushSize);
-    printf("monitor: %d\n", monitor);
-    //exit(EXIT_SUCCESS);
-
-    // Check if file was not provided thru args
+    // Check if input file provided with -i is valid
     if (inputFilepathFlag) {
         if (!validate_file_path(inputFilepath)) exit(EXIT_FAILURE);
         printf("LoadImage from path\n");
-        img = LoadImage(inputFilepath);
+        inputImage = LoadImage(inputFilepath);
     }
 
+    // Check if file was piped in
     if (!inputFilepathFlag && pipedFileFlag){
         // Try to read from stdin
-        printf("load_image_from_pipe CALL\n");
-        img = load_image_from_pipe();
-        if (img.data == NULL) {
+        printf("Open load_image_from_pipe()\n");
+        inputImage = load_image_from_pipe();
+        if (inputImage.data == NULL) {
             printf("No input provided\n");
             print_help(argv[0]);
             exit(EXIT_FAILURE);
         }
-    } else {
+    } else { // If -i or pipe not provided then exit
         printf("No input provided\n");
         print_help(argv[0]);
         exit(EXIT_FAILURE);
     }
 
     // Raylib initialization
-    int imgWidth = img.width;
-    int imgHeight = img.height;
-    printf("img width: %d\nimg height: %d\n", img.width, img.height);
+    // Get input image dimensions to eventually set window size with
+    int imgWidth = inputImage.width;
+    int imgHeight = inputImage.height;
     
     // setting flags that are features disabled otherwise
     SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT);
     InitWindow(screenWidth, screenHeight, "scedit");
 
-    Texture2D tex = LoadTextureFromImage(img); // image converted to texture, uploaded to GPU memory (vram)
-    UnloadImage(img); // once image is uploaded to vram it can be unloaded from ram
+    // Convert input image to texture
+    Texture2D inputTexture = LoadTextureFromImage(inputImage); // image converted to texture, uploaded to GPU memory (vram)
+    UnloadImage(inputImage); // once image is uploaded to vram it can be unloaded from ram
 
     // Variables for letterbox scaling
-    int progScreenWidth = tex.width;
-    int progScreenHeight = tex.height;
+    int progScreenWidth = inputTexture.width;
+    int progScreenHeight = inputTexture.height;
+
     // Set up RenderTextures for drawing and scaling
-    RenderTexture2D target = LoadRenderTexture(progScreenWidth, progScreenHeight);
+    RenderTexture2D backgroundTarget = LoadRenderTexture(progScreenWidth, progScreenHeight);
     RenderTexture2D paintingTarget = LoadRenderTexture(progScreenWidth, progScreenHeight);
-    SetTextureFilter(target.texture, TEXTURE_FILTER_BILINEAR);
+    SetTextureFilter(backgroundTarget.texture, TEXTURE_FILTER_BILINEAR);
     SetTextureFilter(paintingTarget.texture, TEXTURE_FILTER_BILINEAR);
 
     // Window settings
     SetWindowMinSize(250, 250);
     SetWindowPosition(0, 0);
-    SetWindowMonitor(monitor); // idk if this means its primary monitor or not...
-
-    // SetTargetFPS(165);
+    SetWindowMonitor(monitor); // 0 for primary monitor?
+    // SetTargetFPS(60)
     
+    // Get monitor resolution to help determine setting window size
     const int monitorWidth = GetMonitorWidth(monitor);
     const int monitorHeight = GetMonitorHeight(monitor);
-    printf("monitor width: %d\nmonitor height: %d\n", monitorWidth, monitorHeight);
+
+    // Check if image loaded is larger than the monitor or smaller than the minimum window size
     if (imgWidth >= monitorWidth) imgWidth = monitorWidth - 40;
     if (imgHeight >= monitorHeight) imgHeight = monitorHeight - 40;
+    if (imgWidth <= 250) imgWidth = 250;
+    if (imgHeight <= 250) imgHeight = 250;
     SetWindowSize(imgWidth, imgHeight);
+    //SetWindowMinSize(imgWidth, imgHeight);
 
     // Clear buffer before drawing
-    BeginTextureMode(target);
+    BeginTextureMode(backgroundTarget);
         ClearBackground(RAYWHITE);
     EndTextureMode();
 
     // Main loop
     while (!WindowShouldClose()) {
-        // Scaling
+        // Scaling + mouse settings
         float scale = MIN((float)GetScreenWidth() / progScreenWidth, (float)GetScreenHeight() / progScreenHeight);
         Vector2 mouse = GetMousePosition();
         Vector2 virtualMouse = {0};
@@ -419,78 +265,92 @@ int main(int argc, char *argv[]) {
             BeginTextureMode(paintingTarget);
                 Rectangle sourceRec = { virtualMouse.x - eraseScale / 2, virtualMouse.y - eraseScale / 2, eraseScale, eraseScale };
                 Rectangle destRec = { virtualMouse.x - eraseScale / 2, virtualMouse.y - eraseScale / 2, eraseScale, eraseScale };
-                DrawTexturePro(tex, sourceRec, destRec, (Vector2){ 0, 0 }, 0.0f, WHITE);
+                DrawTexturePro(inputTexture, sourceRec, destRec, (Vector2){ 0, 0 }, 0.0f, WHITE);
             EndTextureMode();
         }
 
         // LCONTROL + C event - save image temporarily, call xclip to copy to clipboard
         if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_C)) {
-            copy_to_clipboard(target, paintingTarget);
+            copy_to_clipboard(backgroundTarget, paintingTarget);
         }
 
         // LCONTROL + S event - save image to designated path
         if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_S)) {
-            save_image(target, paintingTarget, outputFilepath);
+            save_image(backgroundTarget, paintingTarget, outputFilepath);
         }
 
         // Backspace event - clear all drawing
         if (IsKeyPressed(KEY_BACKSPACE)) {
             BeginTextureMode(paintingTarget);
-                DrawTexture(tex, 0, 0, WHITE);
+                DrawTexture(inputTexture, 0, 0, WHITE);
             EndTextureMode();
         }
 
-        // Brush size
-        brushSize += GetMouseWheelMove()*5;
+        // Scroll up/down event - Brush size
+        brushSize += GetMouseWheelMove()*2;
         if (brushSize < 2) brushSize = 2;
         if (brushSize > 50) brushSize = 50;
 
-        // Draw
-        BeginTextureMode(target);
-            DrawTexture(tex, 0, 0, WHITE);
+        // Render image on background target before drawing
+        BeginTextureMode(backgroundTarget);
+            DrawTexture(inputTexture, 0, 0, WHITE);
         EndTextureMode();
 
+        // Draw stuff to the screen
         BeginDrawing();
 
-        ClearBackground(BLACK);
+            ClearBackground(BLACK);
 
-        // Draw background texture, to scale
-        DrawTexturePro(
-            target.texture,
-            (Rectangle){0.0f, 0.0f, (float)target.texture.width,
-                        (float)-target.texture.height},
-            (Rectangle){
-                (GetScreenWidth() - ((float)progScreenWidth * scale)) * 0.5f,
-                (GetScreenHeight() - ((float)progScreenHeight * scale)) * 0.5f,
-                (float)progScreenWidth * scale, (float)progScreenHeight * scale},
-            (Vector2){0, 0}, 0.0f, WHITE);
+            // Draw background texture, to scale
+            DrawTexturePro(
+                backgroundTarget.texture,
+                (Rectangle){
+                    0.0f,
+                    0.0f,
+                    (float)backgroundTarget.texture.width,
+                    (float)-backgroundTarget.texture.height},
+                (Rectangle){
+                    (GetScreenWidth() - ((float)progScreenWidth * scale)) * 0.5f,
+                    (GetScreenHeight() - ((float)progScreenHeight * scale)) * 0.5f,
+                    (float)progScreenWidth * scale,
+                    (float)progScreenHeight * scale
+                },
+                (Vector2){0, 0}, 0.0f, WHITE);
 
-        // Draw probably dicks, to scale
-        DrawTexturePro(
-            paintingTarget.texture,
-            (Rectangle){0.0f, 0.0f, (float)paintingTarget.texture.width,
-                    (float)-paintingTarget.texture.height},
-            (Rectangle){
-                (GetScreenWidth() - ((float)progScreenWidth * scale)) * 0.5f,
-                (GetScreenHeight() - ((float)progScreenHeight * scale)) * 0.5f,
-                (float)progScreenWidth * scale, (float)progScreenHeight * scale},
-            (Vector2){0, 0}, 0.0f, WHITE);
+            // Draw probably dicks on the painting target, to scale
+            DrawTexturePro(
+                paintingTarget.texture,
+                (Rectangle){
+                    0.0f,
+                    0.0f,
+                    (float)paintingTarget.texture.width,
+                    (float)-paintingTarget.texture.height
+                },
+                (Rectangle){
+                    (GetScreenWidth() - ((float)progScreenWidth * scale)) * 0.5f,
+                    (GetScreenHeight() - ((float)progScreenHeight * scale)) * 0.5f,
+                    (float)progScreenWidth * scale,
+                    (float)progScreenHeight * scale
+                },
+                (Vector2){0, 0}, 0.0f, WHITE);
 
-        // Draw outline as a pointer
-        if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT)) {
-            DrawCircleLines((int)mouse.x, (int)mouse.y, brushSize, GRAY);
-        } else {
-            DrawCircle(GetMouseX(), GetMouseY(), brushSize, colourSelected);
-        }
+            // Draw circle outline for brush mouse pointer
+            if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT)) {
+                DrawCircleLines((int)mouse.x, (int)mouse.y, brushSize, GRAY);
+            } else {
+                DrawCircle(GetMouseX(), GetMouseY(), brushSize, colourSelected);
+            }
 
         EndDrawing();
     }
 
-    // De-Initialization
-    if (saveOnExitFlag) save_image(target, paintingTarget, outputFilepath);
-    if (clipboardOnExitFlag) copy_to_clipboard(target, paintingTarget);
-    UnloadTexture(tex); // texture unloading
-    UnloadRenderTexture(target);
+    // Check if program should save/copy on exit
+    if (saveOnExitFlag) save_image(backgroundTarget, paintingTarget, outputFilepath);
+    if (clipboardOnExitFlag) copy_to_clipboard(backgroundTarget, paintingTarget);
+
+    // De-initialization
+    UnloadTexture(inputTexture); // texture unloading
+    UnloadRenderTexture(backgroundTarget);
     UnloadRenderTexture(paintingTarget);
     CloseWindow();
     return 0;

@@ -13,4 +13,4 @@ filename=$(date +"%Y-%m-%d-%H:%M").png
 
 [[ ! -d $path ]] && mkdir -p $path
 
-maim -u -s | ./build/scedit -o $path/$filename --clipboardonexit --brushsize 5 --colour fc03b1
+maim -u -s | ./build/scedit -o $path/$filename -x -s -b 5 -c fc03b1
