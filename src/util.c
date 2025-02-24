@@ -48,7 +48,7 @@ void copy_to_clipboard(const RenderTexture2D background, const RenderTexture2D d
     UnloadImage(paintingImage);
 }
 
-void save_image(const RenderTexture2D background, const RenderTexture2D dickDrawings, const char *savePath){
+void save_image(const RenderTexture2D background, const RenderTexture2D dickDrawings, const char *savePath, const bool wasCopied){
     Image backgroundImage = LoadImageFromTexture(background.texture);
     Image paintingImage = LoadImageFromTexture(dickDrawings.texture);
     ImageDraw(&backgroundImage, paintingImage,
@@ -56,9 +56,14 @@ void save_image(const RenderTexture2D background, const RenderTexture2D dickDraw
                (Rectangle){0, 0, paintingImage.width, paintingImage.height}, WHITE);
     ImageFlipVertical(&backgroundImage);
     ExportImage(backgroundImage, savePath);
+    // if the image was also copied, alter the notify-send
     char notify_send[1024] = "notify-send \"Saved image to\" \"";
     strcat(notify_send, savePath);
-    strcat(notify_send, "\" --app-name \"scedit\"");
+    if (wasCopied) {
+        strcat(notify_send, "\" --app-name \"scedit - copied to clipboard\"");
+    } else {
+        strcat(notify_send, "\" --app-name \"scedit\"");
+    }
     system(notify_send);
     UnloadImage(backgroundImage);
     UnloadImage(paintingImage);

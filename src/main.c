@@ -276,7 +276,7 @@ int main(int argc, char *argv[]) {
 
         // LCONTROL + S event - save image to designated path
         if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_S)) {
-            save_image(backgroundTarget, paintingTarget, outputFilepath);
+            save_image(backgroundTarget, paintingTarget, outputFilepath, false);
         }
 
         // Backspace event - clear all drawing
@@ -345,7 +345,7 @@ int main(int argc, char *argv[]) {
     }
 
     // Check if program should save/copy on exit
-    if (saveOnExitFlag) save_image(backgroundTarget, paintingTarget, outputFilepath);
+    if (saveOnExitFlag) save_image(backgroundTarget, paintingTarget, outputFilepath, clipboardOnExitFlag == 1 ? true : false);
     if (clipboardOnExitFlag) copy_to_clipboard(backgroundTarget, paintingTarget);
 
     // De-initialization
